@@ -7,17 +7,10 @@ OSO_DIR = path.join(getcwd()[:2],"/Oslivion/","OSO")
 if not OSO_DIR:
     makedirs(OSO_DIR)
 
-files = listdir(OSO_DIR)
-print(files)
 print("Clearing files...")
-for file in files:
-    filepath = path.join(OSO_DIR,file)
-    dir = path.isdir(filepath)
-    if not (dir and file == "quickaccess"):
-        if dir:
-            rmtree(filepath)
-        else:
-            remove(filepath)
+
+rmtree(path.join(OSO_DIR,"_internal"))
+remove(path.join(OSO_DIR,"OSO.exe"))
 
 print("Cleared out files in OSO dir\n\nDownloading latest release...")
 OSO_DL = requests.get("https://github.com/loplxl/OSlivionOptions/releases/latest/download/OSO.zip",stream=True)
