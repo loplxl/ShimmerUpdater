@@ -1,16 +1,24 @@
 from os import getcwd,path,remove,listdir,makedirs
 from shutil import rmtree
 import requests
+from time import sleep
 import zipfile
-from subprocess import Popen, CREATE_NEW_PROCESS_GROUP,DETACHED_PROCESS
+from subprocess import Popen, CREATE_NEW_PROCESS_GROUP,DETACHED_PROCESS,CREATE_NO_WINDOW
+Popen(["taskkill","/f","/im","OSO.exe"],creationflags=CREATE_NO_WINDOW)
+print("Waiting to ensure OSO is closed...")
+sleep(3)
 OSO_DIR = path.join(getcwd()[:2],"/Oslivion/","OSO")
 if not OSO_DIR:
     makedirs(OSO_DIR)
 
 print("Clearing files...")
 
-rmtree(path.join(OSO_DIR,"_internal"))
-remove(path.join(OSO_DIR,"OSO.exe"))
+_internalPATH = path.join(OSO_DIR,"_internal")
+if path.exists(_internalPATH):
+    rmtree(_internalPATH)
+OSO_EXE_DIR = path.join(OSO_DIR,"OSO.exe")
+if path.exists(OSO_EXE_DIR):
+    remove(OSO_EXE_DIR)
 
 print("Cleared out files in OSO dir\n\nDownloading latest release...")
 OSO_DL = requests.get("https://github.com/loplxl/OSlivionOptions/releases/latest/download/OSO.zip",stream=True)
@@ -30,7 +38,6 @@ with zipfile.ZipFile(ZIP_PATH,'r') as ZIP_REF:
     ZIP_REF.extractall(path.dirname(ZIP_PATH))
 print("Unzipped contents\n\nLaunching new version...")
 
-OSO_EXE_DIR = path.join(OSO_DIR,"OSO.exe")
 while not path.exists(OSO_EXE_DIR): #wait for oso.exe to exist
     pass
 Popen(OSO_EXE_DIR.split(" "),creationflags=CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS,close_fds=True)
