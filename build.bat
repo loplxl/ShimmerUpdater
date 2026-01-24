@@ -1,1 +1,1 @@
-pyinstaller --onefile main.py --name OSOUpdater.exe
+pyinstaller --onefile main.py --name ShimmerUpdater.exe --icon icon.ico
