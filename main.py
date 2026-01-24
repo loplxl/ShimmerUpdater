@@ -49,8 +49,9 @@ try:
     Popen(SHIMMER_EXE_DIR.split(" "),creationflags=CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS,close_fds=True)
     print("New version started")
     
-    shortcutPath = path.join(environ['APPDATA'],r"Microsoft\Windows\Start Menu\Programs\Startup","SetTimerResolution.exe.lnk")
-    Popen(['cmd', '/c', 'start', '', shortcutPath], shell=True)
+    TRES_DIR = path.join(environ['APPDATA'],r"Microsoft\Windows\Start Menu\Programs\Startup","SetTimerResolution.exe.lnk")
+    if path.exists(TRES_DIR):
+        Popen(['cmd', '/c', 'start', '', TRES_DIR], shell=True)
 except Exception as e:
     print("An error occured, please report this:\n",e)
     input()
