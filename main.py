@@ -52,6 +52,7 @@ try:
     TRES_DIR = path.join(environ['APPDATA'],r"Microsoft\Windows\Start Menu\Programs\Startup","SetTimerResolution.exe.lnk")
     if path.exists(TRES_DIR):
         Popen(['cmd', '/c', 'start', '', TRES_DIR], shell=True)
+    remove(ZIP_PATH)
 except Exception as e:
     print("An error occured, please report this:\n",e)
     input()
