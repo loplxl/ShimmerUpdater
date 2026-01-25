@@ -10,7 +10,6 @@ try:
     print("Waiting to ensure Shimmer and SetTimerResolution are closed...")
     sleep(2)
     SHIMMER_DIR = path.join(getcwd()[:2],"/Shimmer")
-    print(SHIMMER_DIR)
     SOFTWARE_DIR = path.join(SHIMMER_DIR,"Software")
     if not path.exists(SHIMMER_DIR):
         makedirs(SHIMMER_DIR)
@@ -51,15 +50,7 @@ try:
 
     print("Files are confirmed deleted, unzipping contents...")
     with zipfile.ZipFile(ZIP_PATH,'r') as ZIP_REF:
-        for member in ZIP_REF.namelist():
-            if member.startswith("Shimmer/"):
-                target_path = path.join(SOFTWARE_DIR, member[len("Shimmer/"):])
-                if member.endswith('/'):
-                    makedirs(target_path, exist_ok=True)
-                else:
-                    makedirs(path.dirname(target_path), exist_ok=True)
-                    with open(target_path, 'wb') as f:
-                        f.write(ZIP_REF.read(member))
+        ZIP_REF.extractall(SHIMMER_DIR)
     print("Unzipped contents\n\nLaunching new version...")
     while not path.exists(SHIMMER_EXE_DIR): #wait for shimmer.exe to exist
         sleep(0.1)
