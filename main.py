@@ -1,5 +1,5 @@
 try:
-    from os import getcwd,path,remove,makedirs,environ
+    from os import getcwd,path,remove,makedirs,environ,rename
     from shutil import rmtree
     import requests
     from time import sleep
@@ -8,41 +8,59 @@ try:
     Popen(["taskkill","/f","/im","Shimmer.exe"],creationflags=CREATE_NO_WINDOW)
     Popen(["taskkill","/f","/im","SetTimerResolution.exe"],creationflags=CREATE_NO_WINDOW)
     print("Waiting to ensure Shimmer and SetTimerResolution are closed...")
-    sleep(3)
+    sleep(2)
     SHIMMER_DIR = path.join(getcwd()[:2],"/Shimmer")
-    SOFTWARE_DIR = path.join(SHIMMER_DIR,"/Software")
-    if not path.exists(SOFTWARE_DIR):
-        makedirs(SOFTWARE_DIR)
+    print(SHIMMER_DIR)
+    SOFTWARE_DIR = path.join(SHIMMER_DIR,"Software")
     if not path.exists(SHIMMER_DIR):
         makedirs(SHIMMER_DIR)
+    if not path.exists(SOFTWARE_DIR):
+        makedirs(SOFTWARE_DIR)
 
     print("Clearing files...")
 
-    _internalPATH = path.join(SHIMMER_DIR,"_internal")
-    if path.exists(_internalPATH):
-        rmtree(_internalPATH)
-    SHIMMER_EXE_DIR = path.join(SHIMMER_DIR,"Shimmer.exe")
+    _INTERNAL_DIR = path.join(SOFTWARE_DIR,"_internal")
+    if path.exists(_INTERNAL_DIR):
+        rmtree(_INTERNAL_DIR)
+    SHIMMER_EXE_DIR = path.join(SOFTWARE_DIR,"Shimmer.exe")
     if path.exists(SHIMMER_EXE_DIR):
         remove(SHIMMER_EXE_DIR)
 
     print("Cleared out files in Shimmer dir\n\nDownloading latest release...")
-    SHIMMER_DL = requests.get("https://github.com/loplxl/Shimmer/releases/latest/download/Shimmer.zip",stream=True)
+    SHIMMER_DL = requests.get("https://github.com/loplxl/ShimmerOS/releases/latest/download/Shimmer.zip",stream=True)
     SHIMMER_DL.raise_for_status()
-    ZIP_PATH = path.join(path.dirname(SHIMMER_DIR),"Shimmer.zip") #put zip in parent dir
+    ZIP_PATH = path.join(SHIMMER_DIR,"Shimmer.zip") #put zip in parent dir
     with open(ZIP_PATH,'wb') as f:
         for chunk in SHIMMER_DL.iter_content(chunk_size=8192):
             f.write(chunk)
     print("Finished downloading latest release\n")
-
-    while path.exists(SHIMMER_EXE_DIR) or path.exists(path.join(SHIMMER_DIR,"_internal")): #wait for files to finish being deleted (if they are)
+    recursions = 0
+    while path.exists(SHIMMER_EXE_DIR) or path.exists(path.join(_INTERNAL_DIR)): #wait for files to finish being deleted (if they are)
+        recursions += 1
+        if recursions > 100:
+            print("Looped 100 times. Trying to delete again")
+            Popen(["taskkill","/f","/im","Shimmer.exe"],creationflags=CREATE_NO_WINDOW)
+            Popen(["taskkill","/f","/im","SetTimerResolution.exe"],creationflags=CREATE_NO_WINDOW)
+            sleep(2)
+            if path.exists(SHIMMER_EXE_DIR):
+                remove(SHIMMER_EXE_DIR)
+            elif path.exists(_INTERNAL_DIR):
+                rmtree(_INTERNAL_DIR)
         sleep(0.1)
         pass
 
     print("Files are confirmed deleted, unzipping contents...")
     with zipfile.ZipFile(ZIP_PATH,'r') as ZIP_REF:
-        ZIP_REF.extractall(path.dirname(ZIP_PATH))
+        for member in ZIP_REF.namelist():
+            if member.startswith("Shimmer/"):
+                target_path = path.join(SOFTWARE_DIR, member[len("Shimmer/"):])
+                if member.endswith('/'):
+                    makedirs(target_path, exist_ok=True)
+                else:
+                    makedirs(path.dirname(target_path), exist_ok=True)
+                    with open(target_path, 'wb') as f:
+                        f.write(ZIP_REF.read(member))
     print("Unzipped contents\n\nLaunching new version...")
-
     while not path.exists(SHIMMER_EXE_DIR): #wait for shimmer.exe to exist
         sleep(0.1)
         pass
