@@ -2,9 +2,11 @@
 name = "ShimmerUpdater"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 reqwest = { version = "0.13.1", features = ["blocking"] }
+walkdir = "2.5.0"
 zip = "7.3.0"
 
 [build-dependencies]
