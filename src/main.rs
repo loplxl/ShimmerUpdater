@@ -93,6 +93,12 @@ fn main() {
     fs::create_dir_all(&software_dir).expect("Unable to create software dir"); //use &software_dir so i can reuse software_dir later
     stage("Ensured software directories exist");
 
+    let old_zip_path: PathBuf = software_dir.join("Shimmer.zip");
+    if old_zip_path.exists() { fs::remove_file(old_zip_path).expect("Unable to remove old Shimmer.zip file (it might not exist)");}
+
+    let zip_path = download_shimmer(&software_dir);
+    stage(&format!("Downloaded Shimmer.zip to {}", &software_dir.display()));
+
     // Kill shimmer/settimerresolution to ensure that you can delete folders next step
     taskkill("taskkill /f /im Shimmer.exe");
     stage("Killed Shimmer.exe");
@@ -106,9 +112,6 @@ fn main() {
     let executable_dir: PathBuf = software_dir.join("Shimmer.exe");
     if executable_dir.exists() { fs::remove_file(executable_dir).expect("Unable to remove Shimmer.exe file");}
     stage("Deleted Shimmer.exe file");
-
-    let zip_path = download_shimmer(&software_dir);
-    stage(&format!("Downloaded Shimmer.zip to {}", &software_dir.display()));
 
     let zipfile = fs::File::open(&zip_path).expect("Failed to open downloaded ZIP file");
     extract_shimmer(&software_dir,zipfile);
