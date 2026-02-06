@@ -99,23 +99,25 @@ fn extract_shimmer(directory: &PathBuf, zipfile: fs::File) {
 fn main() {
     println!("└──────┤ Shimmer Updater");
     // Setup to ensure compatibility
+    stage("Ensuring software directories exist",true);
     let shimmer_dir:  PathBuf = current_drive().join("Shimmer");
     let software_dir: PathBuf = shimmer_dir.join("Software");
     fs::create_dir_all(&software_dir).expect("Unable to create software dir"); //use &software_dir so i can reuse software_dir later
-    stage("Ensured software directories exist",true);
 
+    stage(&format!("Downloading Shimmer.zip to {}...", &software_dir.display()),true);
     let old_zip_path: PathBuf = software_dir.join("Shimmer.zip");
     if old_zip_path.exists() { fs::remove_file(old_zip_path).expect("Unable to remove old Shimmer.zip file (it might not exist)");}
 
     let zip_path = download_shimmer(&software_dir);
-    stage(&format!("Downloaded Shimmer.zip to {}", &software_dir.display()),true);
+    
 
     // Kill shimmer/settimerresolution to ensure that you can delete folders next step
+    stage("Killing Shimmer.exe",true);
     taskkill("Shimmer.exe");
-    stage("Killed Shimmer.exe",true);
+    stage(&format!("Killing SetTimerResolution.exe"),true);
     let str_exe_code: i32 = taskkill("SetTimerResolution.exe").unwrap();
-    stage(&format!("Killed SetTimerResolution.exe with exit code {}",str_exe_code),true);
     let internal_dir: PathBuf = software_dir.join("_internal");
+    stage("Deleting _internal directory",true);
     if internal_dir.exists() {
         for entry in walkdir::WalkDir::new(&internal_dir)
             .into_iter()
@@ -128,15 +130,14 @@ fn main() {
             }
         }
     }
-    stage("Deleted _internal directory",true);
 
+    stage("Deleting old Shimmer.exe file",true);
     let executable_dir: PathBuf = software_dir.join("Shimmer.exe");
     if executable_dir.exists() { fs::remove_file(executable_dir).expect("Unable to remove Shimmer.exe file");}
-    stage("Deleted Shimmer.exe file",true);
 
+    stage("Extracting Shimmer.exe and _internal directory from Shimmer.zip",true);
     let zipfile = fs::File::open(&zip_path).expect("Failed to open downloaded ZIP file");
     let _ = extract_shimmer(&software_dir,zipfile);
-    stage("Extracted Shimmer.exe and _internal dir from Shimmer.zip",true);
 
     run_detached(software_dir.join("Shimmer.exe"));
     stage("Running Shimmer.exe",true);
