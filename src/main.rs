@@ -80,13 +80,6 @@ fn extract_shimmer(directory: &PathBuf, zipfile: fs::File) {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).expect("Failed to find file by index in archive");
             let name: &str = file.name();
-            println!("{}",name);
-            if name.contains("VCRUNTIME140.dll") {
-                if directory.join("Software/_internal/VCRUNTIME140.dll").exists() {
-                    println!("Skipping extraction of {}", name);
-                    continue;
-                }
-            }
             if !name.starts_with("Software\\_internal") { continue }
             let rel_path = Path::new(name)
                 .strip_prefix("Software")
