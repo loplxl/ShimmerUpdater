@@ -1,1 +1,1 @@
-cargo build --release --target x86_64-pc-windows-gnu
+cmd /k cargo build --release --target x86_64-pc-windows-gnu

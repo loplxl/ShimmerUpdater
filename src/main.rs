@@ -24,14 +24,14 @@ fn taskkill(executable:&str) -> Option<i32> {
         .status().expect(&format!("Failed to get status from {}",executable));
     loop {
         let check = Command::new("tasklist")
-            .args(&["/FI",(&format!("IMAGENAME eq {}",executable))])
+            .args(&["/FI",&format!("IMAGENAME eq {}",executable)])
             .output()
             .expect("Failed to run tasklist");
         if String::from_utf8_lossy(&check.stdout).contains("No tasks are running") {
             break; 
         } else { stage(&format!("Waiting for {}",executable),false); }
     }
-    return cmd.code();
+    cmd.code()
 }
 
 fn run_detached(path: PathBuf) {
@@ -80,18 +80,29 @@ fn extract_shimmer(directory: &PathBuf, zipfile: fs::File) {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).expect("Failed to find file by index in archive");
             let name: &str = file.name();
+            println!("{}",name);
+            if name.contains("VCRUNTIME140.dll") {
+                if directory.join("Software/_internal/VCRUNTIME140.dll").exists() {
+                    println!("Skipping extraction of {}", name);
+                    continue;
+                }
+            }
             if !name.starts_with("Software\\_internal") { continue }
             let rel_path = Path::new(name)
                 .strip_prefix("Software")
                 .unwrap();
             let output_path = directory.join(rel_path);
             if file.is_dir() {fs::create_dir_all(output_path).expect("Failed to create directory for _internal file."); continue; }
+            if let Some(parent) = output_path.parent() { fs::create_dir_all(parent).expect("Failed to create directory for _internal file."); }
 
-            //create directories above the file if they dont already exist
-            if let Some(parent) = output_path.parent() { std::fs::create_dir_all(parent).expect("Failed to create directory for _internal file."); }
+            match fs::File::create(&output_path) {
+                Ok(mut output_file) =>
+                    if let Err(e) = copy(&mut file, &mut output_file) {
+                    eprintln!("Failed to extract file to {:?}: {:?}", output_path, e);
+                },
+                Err(e) => eprintln!("Ignoring error for creating file at {:?}: {:?}", output_path, e),
+            }
 
-            let mut output_file = fs::File::create(&output_path).expect("Failed to create output file");
-            copy(&mut file, &mut output_file).expect("Failed to extract file");
         }
     }
 }
@@ -102,8 +113,7 @@ fn main() {
     stage("Ensuring software directories exist",true);
     let shimmer_dir:  PathBuf = current_drive().join("Shimmer");
     let software_dir: PathBuf = shimmer_dir.join("Software");
-    fs::create_dir_all(&software_dir).expect("Unable to create software dir"); //use &software_dir so i can reuse software_dir later
-
+    fs::create_dir_all(&software_dir).expect("Unable to create software dir");
     stage(&format!("Downloading Shimmer.zip to {}...", &software_dir.display()),true);
     let old_zip_path: PathBuf = software_dir.join("Shimmer.zip");
     if old_zip_path.exists() { fs::remove_file(old_zip_path).expect("Unable to remove old Shimmer.zip file (it might not exist)");}
@@ -114,19 +124,25 @@ fn main() {
     // Kill shimmer/settimerresolution to ensure that you can delete folders next step
     stage("Killing Shimmer.exe",true);
     taskkill("Shimmer.exe");
-    stage(&format!("Killing SetTimerResolution.exe"),true);
+    stage("Killing SetTimerResolution.exe",true);
     let str_exe_code: i32 = taskkill("SetTimerResolution.exe").unwrap();
     let internal_dir: PathBuf = software_dir.join("_internal");
     stage("Deleting _internal directory",true);
+    //this walkdir stuff is chatgpt, sorry
     if internal_dir.exists() {
         for entry in walkdir::WalkDir::new(&internal_dir)
             .into_iter()
-            .filter_map(|e: std::result::Result<walkdir::DirEntry, walkdir::Error>| e.ok())
+            .filter_map(|e: Result<walkdir::DirEntry, walkdir::Error>| e.ok())
             .filter(|e| e.path().is_file())
         {
-            match fs::remove_file(entry.path()) {
+            let path = entry.path();
+            if path.ends_with("VCRUNTIME140.dll") {
+                println!("Skipping deletion of {}", path.display());
+                continue;
+            }
+            match fs::remove_file(path) {
                 Ok(_) => (),
-                Err(e) => println!("Could not remove {}: {:?}", entry.path().display(), e),
+                Err(e) => println!("Could not remove {}: {:?}", path.display(), e),
             }
         }
     }
