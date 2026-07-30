@@ -69,7 +69,7 @@ fn download_shimmer(directory: &PathBuf) -> PathBuf {
 fn extract_shimmer(directory: &PathBuf, zipfile: fs::File) {
     let mut archive = ZipArchive::new(zipfile).expect("Failed to archive zipfile");
     { //use shimmer.exes own scope because you cant use 2 references to the same archive in 1 scope
-        let mut shimmer_exe = archive.by_name("Software\\Shimmer.exe").expect("Failed to find Shimmer.exe in archive by name");
+        let mut shimmer_exe = archive.by_name("Software/Shimmer.exe").expect("Failed to find Shimmer.exe in archive by name");
         let mut output_file = fs::File::create(directory.join("Shimmer.exe")).expect("Failed to create output file for Shimmer.exe from archive");
         copy(&mut shimmer_exe, &mut output_file).expect("Failed to extract Shimmer.exe");
         drop(shimmer_exe);
@@ -80,7 +80,7 @@ fn extract_shimmer(directory: &PathBuf, zipfile: fs::File) {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).expect("Failed to find file by index in archive");
             let name: &str = file.name();
-            if !name.starts_with("Software\\_internal") { continue }
+            if !name.starts_with("Software/_internal") { continue }
             let rel_path = Path::new(name)
                 .strip_prefix("Software")
                 .unwrap();
